@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lower Thirds Pro v3 — 방송 자막 그래픽 스튜디오</title>
+  
+  <!-- Google Fonts: Space Grotesk(테크), Cormorant Garamond(명품 세리프), Song Myung(한글명조), Outfit(모던), Noto Sans KR -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,400&family=Noto+Sans+KR:wght@300;400;500;700;900&family=Outfit:wght@200;400;600;800;900&family=Song+Myung&family=Space+Grotesk:wght@300;400;500;700&display=swap" rel="stylesheet">
+  
+  <!-- CSS 스타일시트 -->
+  <link rel="stylesheet" href="style.css">
+  
+  <!-- html2canvas 라이브러리: 투명 PNG 자막 저장용 -->
+  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+</head>
+<body>
+
+  <!-- 앱 컨테이너 -->
+  <div class="app-container" id="app">
+    
+    <!-- 좌측 조작 패널 -->
+    <aside class="control-panel">
+      <header class="panel-header">
+        <div class="logo-area">
+          <span class="logo-icon">📺</span>
+          <h1>Lower Thirds Pro</h1>
+        </div>
+        <p class="logo-desc">상업 방송 및 모션 그래픽 디자인 스튜디오 v3</p>
+      </header>
+
+      <!-- 1. 문구 및 텍스트 관리 -->
+      <section class="control-section">
+        <h2 class="section-title">1. 문구 및 텍스트 관리</h2>
+        
+        <div class="form-group">
+          <label for="inputTag">카테고리/태그 (Badge)</label>
+          <input type="text" id="inputTag" placeholder="예: NETFLIX ORIGINAL" value="NETFLIX ORIGINAL">
+        </div>
+        
+        <div class="form-group">
+          <label>자막 내용 입력 (계층형 구성)</label>
+          <div class="dynamic-lines-container" id="dynamicLinesContainer">
+            <!-- JS에서 동적으로 인풋 주입 -->
+          </div>
+          
+          <button type="button" class="btn-add-line" id="btnAddLine">
+            <span>+</span> 설명 문구 라인 추가
+          </button>
+        </div>
+      </section>
+
+      <!-- 2. 자막 개별 위치 조정 (포커스 타겟 기반) -->
+      <section class="control-section">
+        <h2 class="section-title">2. 자막 개별 위치 조정</h2>
+        
+        <!-- 현재 선택된 요소 인디케이터 -->
+        <div class="selected-element-indicator">
+          선택된 요소: <span id="selectedElementText" class="selected-text-highlight">없음 (화면 요소를 클릭하세요)</span>
+        </div>
+        
+        <div class="form-group range-group">
+          <div class="range-header">
+            <label for="rangePosX">가로 위치 (X Offset)</label>
+            <span id="xPosVal">--</span>
+          </div>
+          <input type="range" id="rangePosX" min="0" max="100" value="10" disabled>
+        </div>
+
+        <div class="form-group range-group">
+          <div class="range-header">
+            <label for="rangePosY">세로 위치 (Y Offset - 바닥 기준)</label>
+            <span id="yPosVal">--</span>
+          </div>
+          <input type="range" id="rangePosY" min="0" max="100" value="10" disabled>
+        </div>
+
+        <div class="form-group range-group" id="groupRangeWidth">
+          <div class="range-header">
+            <label for="rangeWidth">배경 카드 너비 (Width)</label>
+            <span id="widthCardVal">--</span>
+          </div>
+          <input type="range" id="rangeWidth" min="20" max="100" value="70" disabled>
+        </div>
+        
+        <p class="info-text">💡 <b>자막 전체 이동</b>: 자막의 빈 배경 카드를 잡고 드래그하면 통째로 이동합니다.</p>
+        <p class="info-text">💡 <b>개별 문구 이동</b>: 글씨를 직접 클릭하고 드래그하면 카드 내부에서 따로 움직입니다.</p>
+        <p class="info-text">⚠️ <b>되돌리기</b>: 실수했을 땐 <b>Ctrl + Z</b>를 입력하세요.</p>
+      </section>
+
+      <!-- 3. 상업용 디자인 프리셋 (즐겨찾기 추가 및 스크롤 고정) -->
+      <section class="control-section">
+        <div class="preset-section-header">
+          <h2 class="section-title">3. 디자인 프리셋</h2>
+          
+          <!-- 즐겨찾기 필터 -->
+          <div class="fav-filter-wrap">
+            <input type="checkbox" id="checkFavOnly" class="fav-checkbox">
+            <label for="checkFavOnly" class="fav-filter-label" id="lblFavFilter">
+              <span class="star-icon">☆</span> 즐겨찾기만 보기
+            </label>
+          </div>
+        </div>
+
+        <!-- 스크롤 랩퍼 -->
+        <div class="preset-scroll-container">
+          <div class="preset-grid" id="presetGrid">
+            
+            <!-- 1. 넷플릭스 -->
+            <button class="preset-card active" data-preset="netflix" id="card-netflix">
+              <span class="star-toggle" data-target="netflix">☆</span>
+              <div class="preset-preview netflix-preview"></div>
+              <span>넷플릭스 오리지널</span>
+            </button>
+            
+            <!-- 2. 오스카 영화제 -->
+            <button class="preset-card" data-preset="oscar" id="card-oscar">
+              <span class="star-toggle" data-target="oscar">☆</span>
+              <div class="preset-preview oscar-preview"></div>
+              <span>오스카 영화제</span>
+            </button>
+            
+            <!-- 3. 다큐 인터뷰 -->
+            <button class="preset-card" data-preset="cnn" id="card-cnn">
+              <span class="star-toggle" data-target="cnn">☆</span>
+              <div class="preset-preview cnn-preview"></div>
+              <span>다큐 인터뷰 (CNN)</span>
+            </button>
+            
+            <!-- 4. 테크 홀로그램 -->
+            <button class="preset-card" data-preset="hologram" id="card-hologram">
+              <span class="star-toggle" data-target="hologram">☆</span>
+              <div class="preset-preview hologram-preview"></div>
+              <span>테크 홀로그램</span>
+            </button>
+            
+            <!-- 5. 럭셔리 보그 -->
+            <button class="preset-card" data-preset="vogue" id="card-vogue">
+              <span class="star-toggle" data-target="vogue">☆</span>
+              <div class="preset-preview vogue-preview"></div>
+              <span>럭셔리 에디터</span>
+            </button>
+
+            <!-- 6. 레트로 신스웨이브 -->
+            <button class="preset-card" data-preset="synthwave" id="card-synthwave">
+              <span class="star-toggle" data-target="synthwave">☆</span>
+              <div class="preset-preview synthwave-preview"></div>
+              <span>레트로 신스웨이브</span>
+            </button>
+
+            <!-- 7. 90s 한국 예능 -->
+            <button class="preset-card" data-preset="korean-retro" id="card-korean-retro">
+              <span class="star-toggle" data-target="korean-retro">☆</span>
+              <div class="preset-preview korean-retro-preview"></div>
+              <span>90s 국산 예능 자막</span>
+            </button>
+
+            <!-- 8. 애플 스타일 -->
+            <button class="preset-card" data-preset="apple-accent" id="card-apple-accent">
+              <span class="star-toggle" data-target="apple-accent">☆</span>
+              <div class="preset-preview apple-accent-preview"></div>
+              <span>애플 스타일 미니멀</span>
+            </button>
+
+            <!-- 9. 그라데이션 플로우 -->
+            <button class="preset-card" data-preset="gradient-flow" id="card-gradient-flow">
+              <span class="star-toggle" data-target="gradient-flow">☆</span>
+              <div class="preset-preview gradient-flow-preview"></div>
+              <span>그라데이션 플로우</span>
+            </button>
+
+            <!-- 10. 긴급 속보 뉴스 -->
+            <button class="preset-card" data-preset="breaking-news" id="card-breaking-news">
+              <span class="star-toggle" data-target="breaking-news">☆</span>
+              <div class="preset-preview breaking-news-preview"></div>
+              <span>긴급 뉴스 속보바</span>
+            </button>
+
+            <!-- 11. 글리치 사이버 -->
+            <button class="preset-card" data-preset="cyber-glitch" id="card-cyber-glitch">
+              <span class="star-toggle" data-target="cyber-glitch">☆</span>
+              <div class="preset-preview cyber-glitch-preview"></div>
+              <span>글리치 사이버</span>
+            </button>
+
+            <!-- 12. 골드 브러시 -->
+            <button class="preset-card" data-preset="gold-brushed" id="card-gold-brushed">
+              <span class="star-toggle" data-target="gold-brushed">☆</span>
+              <div class="preset-preview gold-brushed-preview"></div>
+              <span>골드 브러시 럭셔리</span>
+            </button>
+
+            <!-- 13. 로맨틱 블라썸 -->
+            <button class="preset-card" data-preset="romantic-blossom" id="card-romantic-blossom">
+              <span class="star-toggle" data-target="romantic-blossom">☆</span>
+              <div class="preset-preview romantic-blossom-preview"></div>
+              <span>로맨틱 블라썸</span>
+            </button>
+
+            <!-- 14. 네온 나이트 펄스 -->
+            <button class="preset-card" data-preset="neon-pulse" id="card-neon-pulse">
+              <span class="star-toggle" data-target="neon-pulse">☆</span>
+              <div class="preset-preview neon-pulse-preview"></div>
+              <span>네온 나이트 펄스</span>
+            </button>
+
+            <!-- 15. 빈티지 저널 -->
+            <button class="preset-card" data-preset="vintage-journal" id="card-vintage-journal">
+              <span class="star-toggle" data-target="vintage-journal">☆</span>
+              <div class="preset-preview vintage-journal-preview"></div>
+              <span>빈티지 저널 배지</span>
+            </button>
+            
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. 글리터 및 애니메이션 세부설정 -->
+      <section class="control-section">
+        <h2 class="section-title">4. 글리터 (Shimmer Sweep) 효과</h2>
+        <div class="checkbox-group">
+          <input type="checkbox" id="checkGlitter" checked>
+          <label for="checkGlitter">글리터 활성화 (좌우 광원 이동)</label>
+        </div>
+        
+        <div class="form-group range-group">
+          <div class="range-header">
+            <label for="rangeGlitterSpeed">광원 스윕 주기</label>
+            <span id="speedVal">3.5초</span>
+          </div>
+          <input type="range" id="rangeGlitterSpeed" min="1" max="10" step="0.5" value="3.5">
+        </div>
+
+        <div class="form-group range-group">
+          <div class="range-header">
+            <label for="rangeGlitterWidth">광원 번쩍임 반경</label>
+            <span id="widthVal">180px</span>
+          </div>
+          <input type="range" id="rangeGlitterWidth" min="50" max="400" step="10" value="180">
+        </div>
+      </section>
+
+      <!-- 5. 가상 모니터 배경 설정 -->
+      <section class="control-section">
+        <h2 class="section-title">5. 모니터 배경화면</h2>
+        <div class="bg-selector">
+          <button class="bg-btn active" data-bg="cinematic" id="btnBgCinematic">시네마틱 미디어</button>
+          <button class="bg-btn" data-bg="green" id="btnBgGreen">크로마키 그린</button>
+          <button class="bg-btn" data-bg="transparent" id="btnBgTransparent">투명 바둑판</button>
+        </div>
+      </section>
+
+      <!-- 액션 버튼 -->
+      <section class="action-section">
+        <button class="action-btn replay-btn" id="btnReplay">
+          <span class="icon">🔄</span> 인트로 모션 다시 재생
+        </button>
+        
+        <div class="download-container">
+          <select id="downloadType" class="download-select">
+            <option value="png">투명 PNG 이미지 (정적)</option>
+            <option value="webm" selected>투명 WebM 동영상 (애니메이션)</option>
+          </select>
+          <button class="action-btn download-btn" id="btnDownload">
+            <span class="icon">📥</span> 파일 다운로드
+          </button>
+        </div>
+      </section>
+    </aside>
+
+    <!-- 우측 모니터 뷰 영역 -->
+    <main class="preview-area">
+      <div class="monitor-wrapper">
+        <div class="monitor-header">
+          <div class="monitor-dots">
+            <span class="dot red"></span>
+            <span class="dot yellow"></span>
+            <span class="dot green"></span>
+          </div>
+          <div class="monitor-title">STUDIO LIVE FEED — 16:9 가상 모니터링</div>
+          <div class="monitor-status">CANVAS</div>
+        </div>
+
+        <!-- 16:9 화면 -->
+        <div class="monitor-screen bg-cinematic" id="monitorScreen">
+          
+          <div class="video-overlay" id="videoOverlay"></div>
+          
+          <!-- PPT 스타일 자석 가이드 라인 (스냅 시 표시) -->
+          <div class="guide-line vertical" id="guide-v"></div>
+          <div class="guide-line horizontal" id="guide-h"></div>
+          
+          <!-- 자막 전체 캔버스 (화면 100% 사이즈, 클릭 관통) -->
+          <div class="lower-third-container" id="lowerThirdContainer">
+            
+            <!-- 🌟 자막 뒷배경 카드 본체 (테마 디자인 적용, 자체 드래그 및 이동 가능) -->
+            <div class="lower-third-banner theme-netflix canvas-draggable" id="lowerThirdBanner" data-id="banner">
+              
+              <!-- 태그 오버레이 엔티티 -->
+              <div class="lt-tag-wrap canvas-draggable lt-text-item" id="ltTagWrap" data-id="tag">
+                <span class="lt-tag" id="ltTag">NETFLIX ORIGINAL</span>
+              </div>
+              
+              <!-- 동적 텍스트 라인 렌더링 컨테이너 -->
+              <div class="lt-content-lines" id="ltContentLines">
+                <!-- JS에서 동적으로 자식 아이템들을 생성하여 주입. 각각 canvas-draggable 및 lt-text-item 클래스 장착 -->
+              </div>
+
+              <!-- 글리터 오버레이 마스크 -->
+              <div class="glitter-sheen" id="glitterSheen"></div>
+              
+            </div>
+            
+          </div>
+          
+        </div>
+      </div>
+      
+      <!-- 스튜디오 정보 가이드 -->
+      <footer class="studio-footer">
+        <p>💡 <b>Pro 팁:</b> 자막의 <b>어두운 빈 배경</b>을 잡고 드래그하면 자막 전체가 움직입니다. <b>글씨</b>를 직접 잡고 드래그하면 배경 안에서 자막의 개별 위치를 세밀하게 편집할 수 있습니다.</p>
+      </footer>
+    </main>
+
+  </div>
+
+  <!-- 메인 스크립트 -->
+  <script src="app.js"></script>
+</body>
+</html>
